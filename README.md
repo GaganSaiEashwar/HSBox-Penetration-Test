@@ -46,7 +46,7 @@ The assessment covers reconnaissance, service enumeration, web application explo
 
 ## Report
 
-**[View the HSBox Penetration Testing Report](./report/Hsbox_report.html)**
+[View the HSBox Penetration Testing Report](./Hsbox_report.html)
 
 ## Disclaimer
 
